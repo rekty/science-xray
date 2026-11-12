@@ -7,7 +7,7 @@ export const ENDPOINTS = {
 };
 
 export const DEFAULT_MODEL = "openai/gpt-5.4-nano";
-export const APP_KEY = "";
+export const APP_KEY = "pk_CyvZmogw5vigtkqf";
 
 const STORE_KEY = "xray.key";
 const DEVICE_KEY = "xray.device";
