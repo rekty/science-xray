@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>XRAY — a science topic you can take apart</title>
+<meta name="description" content="Type a science topic and a Pollinations model turns it into an exploded diagram: pull the layers apart, click one to read what it does. Pay with your own Pollen." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="./">XRAY</a>
+  <p class="tag">A science topic, drawn as layers you can pull apart.</p>
+  <button id="pollen" class="pill" type="button">Connect Pollen</button>
+</header>
+
+<main>
+  <section class="setup">
+    <form id="form" class="askrow">
+      <label class="sr" for="topic">Science topic</label>
+      <input id="topic" type="text" maxlength="200" spellcheck="false"
+             placeholder="why leaves are green — or: how a lithium battery discharges" />
+      <button id="go" class="go" type="submit">Draw it</button>
+    </form>
+    <div id="examples" class="chips" aria-label="Example topics"></div>
+    <p class="hint" id="status">One diagram costs a single chat completion on your own Pollen.</p>
+  </section>
+
+  <section class="stage">
+    <div class="canvas-wrap">
+      <svg id="stage" viewBox="0 0 720 460" role="img" aria-labelledby="diagram-title" preserveAspectRatio="xMidYMid meet">
+        <title id="diagram-title">Exploded diagram</title>
+        <g id="layers"></g>
+      </svg>
+      <p id="empty" class="empty">Nothing drawn yet. Type a topic above — a leaf, a battery, a volcano, a neuron.</p>
+    </div>
+
+    <aside class="side">
+      <h1 id="title">—</h1>
+      <p id="summary" class="summary"></p>
+
+      <label class="slider">
+        <span>Pull the layers apart</span>
+        <input id="explode" type="range" min="0" max="100" value="35" />
+      </label>
+
+      <ol id="legend" class="legend"></ol>
+
+      <div id="detail" class="detail" hidden>
+        <h2 id="detail-label"></h2>
+        <p id="detail-text"></p>
+      </div>
+
+      <div class="controls">
+        <label class="field"><span>Model</span><select id="model" aria-label="Model"></select></label>
+        <p class="knote" id="model-note" data-state="warn"></p>
+        <p class="meter" id="meter">No diagram generated yet.</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="about">
+    <h2>How this works</h2>
+    <p>The model never draws. It returns a spec: a title, a summary and three to six layers, each with a
+      label, a sentence of explanation, a colour, a shape and a share of the stack. The page validates
+      every field — colours must be hex, shapes come from a fixed list, every number is clamped — and
+      then builds the SVG itself. Pull the slider apart to see the inside; click a layer to read it.</p>
+    <p>Each drawing spends <strong>your own Pollen</strong> through
+      <a href="https://github.com/pollinations/pollinations/blob/main/BRING_YOUR_OWN_POLLEN.md" rel="noopener">Bring your own Pollen</a>.
+      Your key goes nowhere except <code>gen.pollinations.ai</code> and stays in this tab's session
+      storage. The price printed under the diagram comes from the usage the API reports and the
+      per-token prices in <code>/models</code>.</p>
+    <p class="small">Tested models are marked <strong>✓</strong> in the picker; <strong>⚠</strong> means the
+      model was not measured on this prompt and may answer with prose instead of the object.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <a href="https://pollinations.ai/?ref=badge" rel="noopener">
+    <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" height="28" />
+  </a>
+  <span class="small">XRAY · the diagram is a spec, the drawing is code</span>
+</footer>
+
+<div id="modal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h2 id="modal-title">Connect your Pollen</h2>
+    <div id="modal-body"></div>
+    <button id="modal-close" class="ghost" type="button">Close</button>
+  </div>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
