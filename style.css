@@ -95,7 +95,7 @@ main { max-width: 1180px; margin: 0 auto; }
 #stage text.layer-label {
   font: 600 13px system-ui, sans-serif; fill: #f2f6ff; pointer-events: none;
   paint-order: stroke; stroke: rgba(8, 12, 20, 0.9); stroke-width: 3px;
-  stroke-linejoin: round; strokelinejoin: round;
+  stroke-linejoin: round;
 }
 
 

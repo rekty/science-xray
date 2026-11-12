@@ -1,11 +1,9 @@
 import {
-  parseSpec,
+  drawSpec,
   layout,
   systemPrompt,
-  userPrompt,
   isVerifiedModel,
   VERIFIED_MODELS,
-  RETRY_INSTRUCTION,
   SHAPES,
   DEMO_SPEC,
 } from "./shared/spec.js";
@@ -212,23 +210,11 @@ async function generate(topic) {
     });
 
   try {
-    const first = await send(userPrompt(topic));
-    let spec = parseSpec(first.text);
-    let usage = first.usage;
-    let attempts = 1;
-    let ms = first.ms;
+    const run = await drawSpec({ topic, send });
+    if (!run.spec) throw new Error("the model did not return a usable diagram — try another topic or model");
 
-    if (!spec) {
-      const second = await send(`${userPrompt(topic)}\n\n${RETRY_INSTRUCTION}`);
-      const retried = parseSpec(second.text);
-      attempts = 2;
-      ms += second.ms;
-      usage = addUsage(usage, second.usage);
-      if (retried) spec = retried;
-    }
-
-    if (!spec) throw new Error("the model did not return a usable diagram — try another topic or model");
-
+    const { attempts, ms, usage } = run;
+    const spec = run.spec;
     renderSpec(spec);
     state.drawings += 1;
     const cost = estimateCost(usage, state.prices.get(state.model));
@@ -254,14 +240,6 @@ async function generate(topic) {
     state.busy = false;
     $("go").disabled = false;
   }
-}
-
-function addUsage(a, b) {
-  if (!a && !b) return null;
-  return {
-    prompt_tokens: (Number(a?.prompt_tokens) || 0) + (Number(b?.prompt_tokens) || 0),
-    completion_tokens: (Number(a?.completion_tokens) || 0) + (Number(b?.completion_tokens) || 0),
-  };
 }
 
 function formatPollen(value) {

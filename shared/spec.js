@@ -60,6 +60,49 @@ export function userPrompt(topic) {
 export const RETRY_INSTRUCTION =
   "That was not the diagram object. Reply again with one JSON object only: title, summary, layers[{label, detail, color, shape, share}]. No prose, no fence.";
 
+/** One diagram costs at most two calls: the ask, then a stricter ask. */
+export const MAX_ATTEMPTS = 2;
+
+export function addUsage(a, b) {
+  if (!a && !b) return null;
+  return {
+    prompt_tokens: (Number(a?.prompt_tokens) || 0) + (Number(b?.prompt_tokens) || 0),
+    completion_tokens: (Number(a?.completion_tokens) || 0) + (Number(b?.completion_tokens) || 0),
+  };
+}
+
+/**
+ * Ask for a diagram spec, with one stricter retry when the reply is not one.
+ * `send` is the only thing that talks to the model, so this loop is testable
+ * without a key: it takes `(prompt) => Promise<{ text, usage?, ms? }>` and may
+ * throw; the error is handed back to the caller untouched.
+ *
+ * Returns `{ spec, attempts, retried, usage, ms }` — `spec` is null when even
+ * the retry did not produce a drawable object. Never asks more than `maxAttempts`.
+ */
+export async function drawSpec({ topic, send, maxAttempts = MAX_ATTEMPTS } = {}) {
+  if (typeof send !== "function") throw new TypeError("drawSpec needs a send(prompt) function");
+  const limit = Math.max(1, Number(maxAttempts) || 1);
+  const ask = userPrompt(topic);
+
+  let spec = null;
+  let usage = null;
+  let ms = 0;
+  let attempts = 0;
+
+  while (attempts < limit && !spec) {
+    const prompt = attempts === 0 ? ask : `${ask}\n\n${RETRY_INSTRUCTION}`;
+    const reply = await send(prompt);
+    attempts += 1;
+    const body = typeof reply === "string" ? { text: reply } : reply || {};
+    ms += Number(body.ms) || 0;
+    usage = addUsage(usage, body.usage);
+    spec = parseSpec(body.text);
+  }
+
+  return { spec, attempts, retried: attempts > 1, usage, ms };
+}
+
 function firstObject(source) {
   const start = source.indexOf("{");
   if (start < 0) return null;

@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseSpec,
+  drawSpec,
+  addUsage,
+  MAX_ATTEMPTS,
+  RETRY_INSTRUCTION,
   normalizeLayer,
   cleanColor,
   layout,
@@ -138,6 +142,99 @@ test("only the measured models are marked verified", () => {
   assert.equal(isVerifiedModel("openai/gpt-5.4-nano"), true);
   assert.equal(isVerifiedModel("other/model"), false);
   assert.equal(isVerifiedModel(undefined), false);
+});
+
+/* ---------- the retry path, driven by an injected sender ---------- */
+
+const fakeSender = (replies) => {
+  const prompts = [];
+  const send = async (prompt) => {
+    prompts.push(prompt);
+    const next = replies[Math.min(prompts.length - 1, replies.length - 1)];
+    if (next instanceof Error) throw next;
+    return typeof next === "function" ? next(prompt, prompts.length) : next;
+  };
+  return { send, prompts };
+};
+
+const prose = { text: "Sure! A leaf is mostly water and chlorophyll.", usage: { prompt_tokens: 40, completion_tokens: 12 }, ms: 900 };
+const good = { text: reply(), usage: { prompt_tokens: 50, completion_tokens: 220 }, ms: 1200 };
+
+test("a good first reply is drawn with a single call", async () => {
+  const { send, prompts } = fakeSender([good]);
+  const run = await drawSpec({ topic: "why leaves are green", send });
+  assert.equal(prompts.length, 1);
+  assert.equal(run.attempts, 1);
+  assert.equal(run.retried, false);
+  assert.equal(run.spec.layers.length, 3);
+  assert.deepEqual(run.usage, { prompt_tokens: 50, completion_tokens: 220 });
+  assert.equal(run.ms, 1200);
+  assert.match(prompts[0], /^Topic: why leaves are green/);
+  assert.ok(!prompts[0].includes(RETRY_INSTRUCTION), "no retry text on the ask itself");
+});
+
+test("prose triggers exactly one stricter retry that keeps the topic", async () => {
+  const { send, prompts } = fakeSender([prose, good]);
+  const run = await drawSpec({ topic: "why the sky is blue", send });
+  assert.equal(prompts.length, 2);
+  assert.equal(run.attempts, 2);
+  assert.equal(run.retried, true);
+  assert.equal(run.spec.layers.length, 3);
+  assert.match(prompts[1], /^Topic: why the sky is blue/);
+  assert.ok(prompts[1].includes(RETRY_INSTRUCTION), "the retry repeats the instruction");
+  assert.ok(prompts[1].startsWith(prompts[0]), "the retry is the same ask plus the instruction");
+  assert.deepEqual(run.usage, { prompt_tokens: 90, completion_tokens: 232 }, "both calls are billed");
+  assert.equal(run.ms, 2100, "both latencies are reported");
+});
+
+test("two prose replies stop at the cap instead of looping", async () => {
+  const { send, prompts } = fakeSender([prose]);
+  const run = await drawSpec({ topic: "volcano", send });
+  assert.equal(prompts.length, MAX_ATTEMPTS);
+  assert.equal(run.spec, null);
+  assert.equal(run.attempts, 2);
+  assert.deepEqual(run.usage, { prompt_tokens: 80, completion_tokens: 24 });
+  assert.equal(run.ms, 1800);
+});
+
+test("maxAttempts is honoured and never sends a third call", async () => {
+  const { send, prompts } = fakeSender([prose]);
+  const run = await drawSpec({ topic: "volcano", send, maxAttempts: 1 });
+  assert.equal(prompts.length, 1);
+  assert.equal(run.attempts, 1);
+  assert.equal(run.retried, false);
+  assert.equal(run.spec, null);
+});
+
+test("a broken first reply is retried, a recovered one is drawn", async () => {
+  const { send, prompts } = fakeSender([{ text: '{"title":"x","layers":[' }, good]);
+  const run = await drawSpec({ topic: "neuron", send });
+  assert.equal(prompts.length, 2);
+  assert.equal(run.spec.title, "Green leaf");
+});
+
+test("a reply without usage leaves nothing to bill, and no NaN", async () => {
+  const broken = { text: reply().replace(/}$/, ",") };
+  const { send } = fakeSender([broken, broken]);
+  const run = await drawSpec({ topic: "leaf", send });
+  assert.equal(run.spec, null);
+  assert.equal(run.usage, null, "no usage reported means nothing to bill, not NaN");
+  assert.equal(run.ms, 0);
+  assert.equal(addUsage(undefined, undefined), null);
+  assert.deepEqual(addUsage({ prompt_tokens: 1 }, { completion_tokens: 4 }), { prompt_tokens: 1, completion_tokens: 4 });
+  assert.deepEqual(addUsage({ prompt_tokens: 1, completion_tokens: 2 }, { prompt_tokens: 3, completion_tokens: 4 }), {
+    prompt_tokens: 4,
+    completion_tokens: 6,
+  });
+});
+
+test("a sender that throws surfaces the error and spends no retry", async () => {
+  const boom = new Error("insufficient pollen");
+  boom.code = "quota";
+  const { send, prompts } = fakeSender([boom]);
+  await assert.rejects(() => drawSpec({ topic: "leaf", send }), /insufficient pollen/);
+  assert.equal(prompts.length, 1);
+  await assert.rejects(() => drawSpec({ topic: "leaf" }), /send\(prompt\)/);
 });
 
 test("the bundled demo spec is valid by the app's own rules", () => {
