@@ -13,6 +13,7 @@ import {
   PALETTE,
   SHAPES,
   MAX_LAYERS,
+  DEMO_SPEC,
 } from "../shared/spec.js";
 
 const reply = (over = {}) =>
@@ -137,4 +138,16 @@ test("only the measured models are marked verified", () => {
   assert.equal(isVerifiedModel("openai/gpt-5.4-nano"), true);
   assert.equal(isVerifiedModel("other/model"), false);
   assert.equal(isVerifiedModel(undefined), false);
+});
+
+test("the bundled demo spec is valid by the app's own rules", () => {
+  const spec = parseSpec(JSON.stringify(DEMO_SPEC));
+  assert.ok(spec, "the demo must survive the same parser the model's reply goes through");
+  assert.equal(spec.layers.length, DEMO_SPEC.layers.length);
+  for (const layer of spec.layers) {
+    assert.ok(SHAPES.includes(layer.shape));
+    assert.ok(/^#[0-9a-f]{6}$/.test(layer.color));
+    assert.ok(layer.detail.length > 20);
+  }
+  assert.ok(layout(spec.layers, 1).every((row) => row.y + row.h <= 460));
 });

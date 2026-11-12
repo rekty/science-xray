@@ -7,6 +7,7 @@ import {
   VERIFIED_MODELS,
   RETRY_INSTRUCTION,
   SHAPES,
+  DEMO_SPEC,
 } from "./shared/spec.js";
 import {
   connected,
@@ -417,3 +418,8 @@ $("modal").addEventListener("click", (event) => {
 
 pollenLabel();
 loadModels();
+
+if (new URLSearchParams(location.search).has("demo")) {
+  renderSpec(DEMO_SPEC);
+  say("This is a bundled demo diagram. Connect Pollen and type a topic to draw your own.");
+}

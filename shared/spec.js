@@ -12,6 +12,19 @@ export function isVerifiedModel(id) {
 export const SHAPES = ["slab", "ring", "core", "wave", "blob"];
 export const PALETTE = ["#6f5dff", "#27d4cd", "#74ff7e", "#ffb45c", "#ff6f91", "#9ad0ff", "#d1a3ff"];
 
+// A bundled spec so the page can be seen (and screenshotted) without spending Pollen.
+export const DEMO_SPEC = {
+  title: "Why leaves are green",
+  summary: "White light in, red and blue absorbed, green sent back to your eye.",
+  layers: [
+    { label: "Incoming sunlight", detail: "White light reaches the leaf carrying every visible wavelength at once.", color: "#9ad0ff", shape: "wave", share: 0.2 },
+    { label: "Chlorophyll", detail: "Pigments inside the chloroplasts absorb red and blue light strongly and green only weakly.", color: "#27d4cd", shape: "blob", share: 0.35 },
+    { label: "Photosynthesis", detail: "The absorbed energy drives electron transfer, splitting water and building sugar from CO2.", color: "#74ff7e", shape: "core", share: 0.25 },
+    { label: "Green reflected", detail: "Green wavelengths are not absorbed, so they leave the leaf and reach your eye — that is the colour you see.", color: "#ffb45c", shape: "ring", share: 0.2 },
+  ],
+  model: "demo",
+};
+
 export const MIN_LAYERS = 2;
 export const MAX_LAYERS = 7;
 
@@ -32,6 +45,7 @@ export function systemPrompt() {
     "- share: 0.15 to 1, how much room the layer takes in the stack (thick outer shells larger).",
     "- summary: one sentence (max 160 characters) naming the whole system.",
     "- Be concrete and correct. No metaphors about journeys, no “not just X but Y”.",
+    "- Check directions before answering: which way ions, electrons, light or heat actually move, and in which order the steps happen. A diagram that runs backwards is worse than no diagram.",
   ].join("\n");
 }
 
