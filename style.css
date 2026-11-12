@@ -93,11 +93,11 @@ main { max-width: 1180px; margin: 0 auto; }
 #stage g.layer:hover .shape { filter: brightness(1.25); }
 #stage g.layer.selected .shape { stroke: #ffffff; stroke-width: 2.5; }
 #stage text.layer-label {
-  font: 600 13px system-ui, sans-serif; fill: #0b0f18; pointer-events: none;
-  paint-order: stroke; stroke: rgba(11, 15, 24, 0.82); stroke-width: 3.5px;
-  stroke-linejoin: round;
+  font: 600 13px system-ui, sans-serif; fill: #f2f6ff; pointer-events: none;
+  paint-order: stroke; stroke: rgba(8, 12, 20, 0.9); stroke-width: 3px;
+  stroke-linejoin: round; strokelinejoin: round;
 }
-#stage text.layer-label.on-dark { fill: #e8eefc; }
+
 
 .empty[hidden] { display: none; }
 .empty {

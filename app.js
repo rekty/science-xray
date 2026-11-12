@@ -68,15 +68,6 @@ function estimateCost(usage, pricing) {
   return prompt + completion;
 }
 
-function shine(color) {
-  // A readable label colour on top of the layer fill.
-  const hex = String(color).replace("#", "");
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "dark" : "light";
-}
-
 function shapeNode(row, layer, selected) {
   const group = el("g", { class: `layer${selected ? " selected" : ""}`, tabindex: "0", role: "button" });
   group.dataset.index = String(row.index);
@@ -129,7 +120,7 @@ function shapeNode(row, layer, selected) {
     x: row.cx,
     y: row.cy + 5,
     "text-anchor": "middle",
-    class: `layer-label${shine(layer.color) === "light" ? " on-dark" : ""}`,
+    class: "layer-label",
   });
   label.textContent = layer.label;
   group.appendChild(label);
